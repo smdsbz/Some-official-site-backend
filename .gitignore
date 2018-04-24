@@ -58,5 +58,5 @@ typings/
 .env
 
 # Vim Session
-.vim
+Session.vim
 

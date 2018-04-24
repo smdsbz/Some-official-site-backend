@@ -1,3 +1,5 @@
+const __author__ = 'smdsbz@GitHub.com';
+
 const Sequelize = require('sequelize');
 const Op = Sequelize.Op;
 const sequelize = new Sequelize(
@@ -23,14 +25,10 @@ module.exports = {
      * query `Dian_officialsite`.`articles` via time
      *
      * Args:
-     * +--------------+-------------------------------------+-----------+
-     * | Field        | Description                         | Required? |
-     * +--------------+-------------------------------------+-----------|
-     * | publish_time | the article's publish_time querying | yes       |
-     * +--------------+-------------------------------------+-----------+
+     *      publish_time    - [string] legal `Date` string
      *
      * Return:
-     *     Record in database table.
+     *     [articles]
      */
     if (params.publish_time) {
       return Articles.findOne({
@@ -47,16 +45,12 @@ module.exports = {
      * get list of articles in `Dian_officialsite`.`articles`
      *
      * Args:
-     * +------------+---------------------------+-----------+
-     * | Field      | Description               | Required? |
-     * +------------+---------------------------+-----------|
-     * | limit      | count of articles to show | no        |
-     * | start_time | starting time             | no        |
-     * | end_time   | ending time               | no        |
-     * +------------+---------------------------+-----------+
+     *      limit       - [number] [optional]
+     *      start_time  - [string] [optional] legal `Date` string
+     *      end_time    - [string] [optional] legal `Date` string
      *
      * Return:
-     *     An `Array` of records.
+     *     [Array] of [articles]
      */
     if (params.start_time) {
       params.start_time = new Date(params.start_time);
@@ -80,6 +74,26 @@ module.exports = {
   },
 
   create: (record) => {
+    /**
+     * insert into `Dian_officialsite`.`articles`
+     *
+     * Args:
+     *     record   - [Object] containing:
+     *                  title           - [string]
+     *                  publish_time    - [string] NOTE: will be converted to
+     *                                              [Date], so make sure the
+     *                                              string format is correct!
+     *                  content         - [string]
+     *
+     * Return:
+     *     [Promise]
+     *      on fail, `reject` with an [Object] containing:
+     *          status  - [number] error code:
+     *                              999 - article with this title already exist
+     *                              998 - database internal error,
+     *                                      inform the author if this occur!
+     *          msg     - [UNKNOWN] supplementary error message
+     */
     return new Promise((resolve, reject) => {
       Articles
         // look for existing record, one would be sufficient
@@ -95,7 +109,10 @@ module.exports = {
           }
         })
         .catch((err) => {
-          reject(err);
+          reject({
+            status: 998,
+            msg: err
+          });
         });
     });
   }
