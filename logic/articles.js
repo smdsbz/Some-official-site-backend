@@ -15,6 +15,10 @@ const sequelize = new Sequelize(
     }
   });
 const Articles = sequelize.import('../models/articles.js'); // import model
+Articles.sync()
+  .then(() => {
+    console.log('`Articles` model synced');
+  });
 
 
 // Define user logic level methods
@@ -28,16 +32,43 @@ module.exports = {
      *      publish_time    - [string] legal `Date` string
      *
      * Return:
-     *     [articles]
+     *      resolve =>  code: 200
+     *                  data: `article` asking for
+     *
+     *      reject  =>  code: 900
+     *                  data: no satisfying data record message
+     *
+     *                  code: 901
+     *                  data: unkown error object
      */
-    if (params.publish_time) {
-      return Articles.findOne({
-        where: {
-          publish_time: new Date(params.publish_time)
-        }
+    return new Promise((resolve, reject) => {
+      Articles
+        .findOne({
+          where: {
+            publish_time: new Date(params.publish_time)
+          }
+        })
+        .then((record) => {
+          if (record) {
+            resolve({
+              code: 200,
+              data: record
+            });
+          } else {        // no satisfying record found
+            resolve({
+              code: 900,
+              data: `no data found with \`publish_time\` of ` +
+                    `${params.publish_time}`
+            });
+          }
+        })
+        .catch((err) => { // unexpected error
+          reject({
+            code: 901,
+            data: err
+          });
+        });
       });
-    }
-    return null;
   },
 
   list: (params) => {
@@ -50,27 +81,48 @@ module.exports = {
      *      end_time    - [string] [optional] legal `Date` string
      *
      * Return:
-     *     [Array] of [articles]
+     *      resolve =>  code: 200
+     *                  data: `article` asking for
+     *
+     *      reject  =>  code: 901
+     *                  data: unkown error object
      */
-    if (params.start_time) {
-      params.start_time = new Date(params.start_time);
-    } else {
-      params.start_time = new Date('1970-01-01');   // should be early enough
-    }
-    if (params.end_time) {
-      params.end_time = new Date(params.end_time);
-    } else {
-      params.end_time = new Date();     // now is the latest you can get
-    }
-    return Articles.findAll({
-      where: {
-        publish_time: {
-          [Op.gte]: params.start_time,
-          [Op.lte]: params.end_time
-        }
-      },
-      limit: params.limit || 25
-    });
+    return new Promise((resolve, reject) => {
+      // pre-porcess input time vars
+      if (params.start_time) {
+        params.start_time = new Date(params.start_time);
+      } else {
+        params.start_time = new Date('1970-01-01');   // should be early enough
+      }
+      if (params.end_time) {
+        params.end_time = new Date(params.end_time);
+      } else {
+        params.end_time = new Date();     // now is the latest you can get
+      }
+      // do finding jobs
+      Articles
+        .findAll({
+          where: {
+            publish_time: {
+              [Op.gte]: params.start_time,
+              [Op.lte]: params.end_time
+            }
+          },
+          limit: params.limit || 25
+        })
+        .then((record) => {
+          resolve({
+            code: 200,
+            data: record
+          });
+        })
+        .catch((err) => {   // unexpected errors
+          reject({
+            code: 901,
+            data: err
+          })
+        })
+      });
   },
 
   create: (record) => {
@@ -78,43 +130,48 @@ module.exports = {
      * insert into `Dian_officialsite`.`articles`
      *
      * Args:
-     *     record   - [Object] containing:
-     *                  title           - [string]
-     *                  publish_time    - [string] NOTE: will be converted to
-     *                                              [Date], so make sure the
-     *                                              string format is correct!
-     *                  content         - [string]
+     *      title           - [string]
+     *      publish_time    - [string] NOTE: will be converted to
+     *                                 [Date], so make sure the
+     *                                 string format is correct!
+     *      content         - [string]
      *
      * Return:
-     *     [Promise]
-     *      on fail, `reject` with an [Object] containing:
-     *          status  - [number] error code:
-     *                              999 - article with this title already exist
-     *                              998 - database internal error,
-     *                                      inform the author if this occur!
-     *          msg     - [UNKNOWN] supplementary error message
+     *      resolve =>  code: 200
+     *                  data: `.title` of the new article
+     *
+     *      reject  =>  code: 999
+     *                  data: same title message
+     *
+     *                  code: 901
+     *                  data: unkown error object
      */
     return new Promise((resolve, reject) => {
       Articles
-        // look for existing record, one would be sufficient
+        // first look for existing record, one would be sufficient
         .findOne({ where: { title: record.title } })
         .then((article) => {
           if (article) {  // existing record
-            reject({
-              status: 999,
-              msg: `Exsisting article "${article.title}" inserted at "${article.publish_time}"!`
+            resolve({
+              code: 999,
+              data: `Exsisting article "${article.title}" inserted at ` +
+                    `"${article.publish_time}"!`
             });
           } else {
             Articles.create(record);
+            resolve({
+              code: 200,
+              data: record.title
+            });
           }
         })
         .catch((err) => {
           reject({
-            status: 998,
-            msg: err
+            code: 998,
+            data: err
           });
         });
-    });
+      });
   }
 
 
@@ -129,8 +186,15 @@ if (test) {
       publish_time: '1970-01-01',
       content: 'A big news made by Mr.口-口'
     })
+    .then((retval) => {
+      if (retval.code === 200) {
+        console.log(`article "${retval.data}" inserted!`);
+      } else {
+        console.log(`In Articles.create[${retval.code}]: ${retval.data}`);
+      }
+    })
     .catch((err) => {
-      console.log(`Error occured: ${err.msg}`);
+      console.log(err.data);
     });
 
   module.exports.create({
@@ -138,26 +202,40 @@ if (test) {
       publish_time: '1980-01-01',
       content: 'uvuvwevwev'
     })
+    .then((retval) => {
+      if (retval.code === 200) {
+        console.log(`article "${retval.data}" inserted!`);
+      } else {
+        console.log(`In Articles.create[${retval.code}]: ${retval.data}`);
+      }
+    })
     .catch((err) => {
-      console.log(`Error occured: ${err.msg}`);
+      console.log(err.data);
     });
 
-  module.exports.getArticle({publish_time: '1970-01-01'})
-    .then((data) => {
-      if (data) {
-        console.log(`Found ${data.title} in records!`);
+  module.exports.getArticle({publish_time: '1970-01-02'})
+    .then((retval) => {
+      if (retval.code === 200) {
+        console.log(`Found "${retval.data.title}" in records!`);
       } else {
         console.log(`No data found!`);
       }
+    })
+    .catch((err) => {
+      console.log(`Error occured in ` +
+          `\`Articles.getArticle\`: ${err.data}`);
     });
 
   module.exports.list({start_time: '1970-01-01'})
-    .then((data) => {
-      if (data) {
-        console.log(`Found ${data.length} records!`);
+    .then((retval) => {
+      if (retval.code === 200) {
+        console.log(`Found ${retval.data.length} records!`);
       } else {
-        console.log(`No data found!`);
+        console.log(`This should not appear: retcode ${retval.code}`);
       }
+    })
+    .catch((err) => {
+      /* pass */
     });
 }
 
