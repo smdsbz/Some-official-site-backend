@@ -15,10 +15,7 @@ const sequelize = new Sequelize(
     }
   });
 const Articles = sequelize.import('../models/articles.js'); // import model
-Articles.sync()
-  .then(() => {
-    console.log('`Articles` model synced');
-  });
+sequelize.sync();
 
 
 // Define user logic level methods
@@ -255,7 +252,7 @@ module.exports = {
       params.publish_time.setHours(0, 0, 0, 0);
       // set find range - end of this day
       let publish_time_strict_end = new Date(params.publish_time.getTime()
-                                             + 24 * 3600 * 1000);   // one day in milliseconds
+                                             + 24 * 3600 * 1000);   // a day in ms
       publish_time_strict_end.setHours(0, 0, 0, 0); // align to start of day
       // validation OK
       Articles
@@ -305,7 +302,7 @@ module.exports = {
 
 
 // Test
-let test = true;
+let test = false;
 if (test) {
   module.exports.newArticle({
       title: 'BREAKING NEWS!!!',
