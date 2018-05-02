@@ -42,10 +42,19 @@ module.exports = {
      *                  data: unkown error object
      */
     return new Promise((resolve, reject) => {
+      // align `params.publish_time`
+      params.publish_time = new Date(params.publish_time);
+      params.publish_time.setHours(0, 0, 0, 0);     // NOTE: consider timezone
+      let publish_time_strict_end = new Date(params.publish_time.getTime()
+                                             + 24 * 3600 * 1000);
+      publish_time_strict_end.setHours(0, 0, 0, 0); // start of next day
       Articles
         .findOne({
           where: {
-            publish_time: new Date(params.publish_time)
+            publish_time: {
+              [Op.gte]: params.publish_time,
+              [Op.lt]: publish_time_strict_end
+            }
           }
         })
         .then((record) => {
@@ -92,7 +101,7 @@ module.exports = {
       if (params.start_time) {
         params.start_time = new Date(params.start_time);
       } else {
-        params.start_time = new Date('1970-01-01');   // should be early enough
+        params.start_time = new Date('1970-01-01');   // HACK: should be early enough
       }
       if (params.end_time) {
         params.end_time = new Date(params.end_time);
@@ -125,7 +134,7 @@ module.exports = {
       });
   },
 
-  create: (record) => {
+  newArticle: (record) => {
     /**
      * insert into `Dian_officialsite`.`articles`
      *
@@ -172,6 +181,123 @@ module.exports = {
           });
         });
       });
+  },
+
+  updateArticle: (params) => {
+    /**
+     * update article in `Dian_officialsite`.`articles`
+     *
+     * Args:
+     *      title           - [string]
+     *      publish_time    - [string] [optional] updated article's
+     *                        `publish_time` will be set to this, or today if
+     *                        not given
+     *      content         - [string] new contents
+     *
+     * Return:
+     *      resolve =>  code: 200
+     *                  data: updated `publish_time`
+     *
+     *      reject  =>  code: 900
+     *                  data: article does not exist message
+     */
+    return new Promise((resolve, reject) => {
+      Articles
+        .findAll({ where: { title: params.title } })
+        .then((query) => {
+          if (!query.length) {  // no existing article with `title` as `params.title`
+            resolve({
+              code: 900,
+              data: `no existing article named "${params.title}"`
+            });
+          } else if (query.length !== 1) {  // multiple article with `params.title`
+            resolve({
+              code: 901,
+              data: `multiple article named "${params.title}"`
+            });
+          } else {  // legit query - only 1 found with this title
+            return query[0];
+          }
+        })
+        .then((article) => {
+          // legitify `params`
+          params.publish_time = params.publish_time || new Date();
+          return article.update({
+            publish_time: params.publish_time,
+            content: params.content
+          });
+        })
+        .then(() => {
+          resolve({
+            code: 200,
+            data: params.publish_time   // legitified already
+          });
+        })
+        .catch((err) => {
+          reject({
+            code: 999,
+            data: err
+          });
+        });
+    });
+  },
+
+  deleteAricle: (params) => {
+    return new Promise((resolve, reject) => {
+      // params validation
+      if (!params.publish_time) {   // required param not provided
+        reject({
+          code: 903,
+          data: '`params.publish_time` should NOT be undefined!'
+        });
+      }
+      params.publish_time = new Date(params.publish_time);
+      params.publish_time.setHours(0, 0, 0, 0);
+      // set find range - end of this day
+      let publish_time_strict_end = new Date(params.publish_time.getTime()
+                                             + 24 * 3600 * 1000);   // one day in milliseconds
+      publish_time_strict_end.setHours(0, 0, 0, 0); // align to start of day
+      // validation OK
+      Articles
+        .findAll({
+          where: {
+            publish_time: {
+              [Op.gte]: new Date(params.publish_time),
+              [Op.lt]: publish_time_strict_end
+            }
+          }
+        })
+        .then((query) => {
+          if (!query.length) {  // no existing article with `title` as `params.title`
+            resolve({
+              code: 900,
+              data: `no existing article updated at "${params.publish_time}"`
+            });
+          } else if (query.length !== 1) {  // multiple article with `params.title`
+            resolve({
+              code: 901,
+              data: `multiple article updated at "${params.publish_time}"`
+            });
+          } else {  // legit query - only 1 found with this title
+            return query[0];
+          }
+        })
+        .then((article) => {
+          return article.destroy();
+        })
+        .then(() => {
+          resolve({
+            code: 200,
+            data: params.publish_time   // legitified already
+          });
+        })
+        .catch((err) => {
+          reject({
+            code: 999,
+            data: err
+          });
+        });
+    });
   }
 
 
@@ -181,7 +307,7 @@ module.exports = {
 // Test
 let test = true;
 if (test) {
-  module.exports.create({
+  module.exports.newArticle({
       title: 'BREAKING NEWS!!!',
       publish_time: '1970-01-01',
       content: 'A big news made by Mr.口-口'
@@ -190,14 +316,14 @@ if (test) {
       if (retval.code === 200) {
         console.log(`article "${retval.data}" inserted!`);
       } else {
-        console.log(`In Articles.create[${retval.code}]: ${retval.data}`);
+        console.log(`In Articles.newArticle[${retval.code}]: ${retval.data}`);
       }
     })
     .catch((err) => {
       console.log(err.data);
     });
 
-  module.exports.create({
+  module.exports.newArticle({
       title: 'ANOTHER BREAKING NEWS!!!',
       publish_time: '1980-01-01',
       content: 'uvuvwevwev'
@@ -206,12 +332,30 @@ if (test) {
       if (retval.code === 200) {
         console.log(`article "${retval.data}" inserted!`);
       } else {
-        console.log(`In Articles.create[${retval.code}]: ${retval.data}`);
+        console.log(`In Articles.newArticle[${retval.code}]: ${retval.data}`);
       }
     })
     .catch((err) => {
       console.log(err.data);
     });
+
+  module.exports.updateArticle({
+      // title: 'BREAKING NEWS!!!',
+      title: 'BEAKING NEWS!!!',     // false title
+      content: `plus one second to ${new Date()} ==> ` +
+          `${new Date(new Date().getTime() + 1)}`
+    })
+    .then((retval) => {
+      if (retval.code === 200) {
+        console.log(`updated article at ${retval.data}`);
+      } else {
+        console.log(`In Articles.updateArticle[${retval.code}]: ` +
+            `${retval.data}`);
+      }
+    })
+    .catch((err) => {
+      console.log(err.data);
+    })
 
   module.exports.getArticle({publish_time: '1970-01-02'})
     .then((retval) => {
@@ -237,5 +381,18 @@ if (test) {
     .catch((err) => {
       /* pass */
     });
+
+  module.exports.deleteAricle({ publish_time: '1980-01-01' })
+    .then((retval) => {
+      if (retval.code === 200) {
+        console.log(`article successfully deleted!`);
+      } else {
+        console.log(`In Articles.deleteAricle[${retval.code}]: ${retval.data}`);
+      }
+    })
+    .catch((err) => {
+      console.log(err);
+    });
+
 }
 
