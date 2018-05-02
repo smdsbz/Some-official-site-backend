@@ -15,13 +15,13 @@ const sequelize = new Sequelize(
     }
   });
 const Articles = sequelize.import('../models/articles.js'); // import model
-sequelize.sync();
+sequelize.sync();   // auto sync via middleware
 
 
 // Define user logic level methods
 module.exports = {
 
-  getArticle: (params) => {
+  getArticle: async (params) => {
     /**
      * query `Dian_officialsite`.`articles` via time
      *
@@ -32,14 +32,20 @@ module.exports = {
      *      resolve =>  code: 200
      *                  data: `article` asking for
      *
-     *      reject  =>  code: 900
+     *                  code: 900
      *                  data: no satisfying data record message
      *
-     *                  code: 901
+     *      reject  =>  code: 901
      *                  data: unkown error object
      */
     return new Promise((resolve, reject) => {
       // align `params.publish_time`
+      if (!params.publish_time) {
+        reject({
+          code: 902,
+          data: 'parameter `publish_time` needed!'
+        });
+      }
       params.publish_time = new Date(params.publish_time);
       params.publish_time.setHours(0, 0, 0, 0);     // NOTE: consider timezone
       let publish_time_strict_end = new Date(params.publish_time.getTime()
@@ -77,7 +83,7 @@ module.exports = {
       });
   },
 
-  list: (params) => {
+  list: async (params) => {
     /**
      * get list of articles in `Dian_officialsite`.`articles`
      *
@@ -88,23 +94,17 @@ module.exports = {
      *
      * Return:
      *      resolve =>  code: 200
-     *                  data: `article` asking for
+     *                  data: `article` asking for, could be empty Array
      *
      *      reject  =>  code: 901
      *                  data: unkown error object
      */
     return new Promise((resolve, reject) => {
       // pre-porcess input time vars
-      if (params.start_time) {
-        params.start_time = new Date(params.start_time);
-      } else {
-        params.start_time = new Date('1970-01-01');   // HACK: should be early enough
-      }
-      if (params.end_time) {
-        params.end_time = new Date(params.end_time);
-      } else {
-        params.end_time = new Date();     // now is the latest you can get
-      }
+      params.start_time = params.start_time ?
+          new Date(params.start_time) : new Date('1970-01-01'); // HACK: should be early enough
+      params.end_time = params.end_time ?
+          new Date(params.end_time) : new Date();
       // do finding jobs
       Articles
         .findAll({
@@ -131,7 +131,7 @@ module.exports = {
       });
   },
 
-  newArticle: (record) => {
+  newArticle: async (record) => {
     /**
      * insert into `Dian_officialsite`.`articles`
      *
@@ -146,12 +146,17 @@ module.exports = {
      *      resolve =>  code: 200
      *                  data: `.title` of the new article
      *
-     *      reject  =>  code: 999
+     *                  code: 999
      *                  data: same title message
      *
-     *                  code: 901
+     *      reject  =>  code: 901
      *                  data: unkown error object
      */
+    // legitify params
+    record.publish_time = record.publish_time ?
+        new Date(record.publish_time) : new Date();
+    record.publish_time.setHours(0, 0, 0, 0);
+
     return new Promise((resolve, reject) => {
       Articles
         // first look for existing record, one would be sufficient
@@ -180,7 +185,7 @@ module.exports = {
       });
   },
 
-  updateArticle: (params) => {
+  updateArticle: async (params) => {
     /**
      * update article in `Dian_officialsite`.`articles`
      *
@@ -194,6 +199,12 @@ module.exports = {
      * Return:
      *      resolve =>  code: 200
      *                  data: updated `publish_time`
+     *
+     *                  code: 900
+     *                  data: title not found message
+     *
+     *                  code: 901
+     *                  data: multiple title found message
      *
      *      reject  =>  code: 900
      *                  data: article does not exist message
@@ -218,7 +229,9 @@ module.exports = {
         })
         .then((article) => {
           // legitify `params`
-          params.publish_time = params.publish_time || new Date();
+          params.publish_time = params.publish_time ?
+              new Date(params.publish_time) : new Date();
+          params.publish_time.setHours(0, 0, 0, 0);
           return article.update({
             publish_time: params.publish_time,
             content: params.content
@@ -239,15 +252,37 @@ module.exports = {
     });
   },
 
-  deleteAricle: (params) => {
+  deleteAricle: async (params) => {
+    /**
+     * delete article in `Dian_officialsite`.`articles`
+     *
+     * Args:
+     *      publish_time    - [string] article's updated `publish_time`
+     *
+     * Return:
+     *      resolve =>  code: 200
+     *                  data: deleted `publish_time`
+     *
+     *                  code: 900
+     *                  data: target article not found
+     *
+     *                  code: 901
+     *                  data: multiple target articles found
+     *
+     *      reject  =>  code: 903
+     *                  data: insufficient parameter message
+     *
+     *                  code: 999
+     *                  data: unkown error object
+     */
     return new Promise((resolve, reject) => {
       // params validation
-      if (!params.publish_time) {   // required param not provided
-        reject({
-          code: 903,
-          data: '`params.publish_time` should NOT be undefined!'
-        });
-      }
+      // if (!params.publish_time) {   // required param not provided
+      //   reject({
+      //     code: 903,
+      //     data: '`params.publish_time` should NOT be undefined!'
+      //   });
+      // }
       params.publish_time = new Date(params.publish_time);
       params.publish_time.setHours(0, 0, 0, 0);
       // set find range - end of this day
