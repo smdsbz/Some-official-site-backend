@@ -101,10 +101,12 @@ module.exports = {
      */
     return new Promise((resolve, reject) => {
       // pre-porcess input time vars
+      // HACK: 1970-01-01 should be early enough
       params.start_time = params.start_time ?
-          new Date(params.start_time) : new Date('1970-01-01'); // HACK: should be early enough
+          new Date(params.start_time) : new Date('1970-01-01'); 
+      // HACK: manually +1s considering async does not promise you sequential
       params.end_time = params.end_time ?
-          new Date(params.end_time) : new Date();
+          new Date(params.end_time) : new Date(new Date().getTime() + 1);
       // do finding jobs
       Articles
         .findAll({
@@ -155,7 +157,9 @@ module.exports = {
     // legitify params
     record.publish_time = record.publish_time ?
         new Date(record.publish_time) : new Date();
-    record.publish_time.setHours(0, 0, 0, 0);
+    // NOTE: uncomment the line below, if the final API suggests that
+    //       `publish_time` could be unique
+    // record.publish_time.setHours(0, 0, 0, 0);
 
     return new Promise((resolve, reject) => {
       Articles
@@ -231,7 +235,9 @@ module.exports = {
           // legitify `params`
           params.publish_time = params.publish_time ?
               new Date(params.publish_time) : new Date();
-          params.publish_time.setHours(0, 0, 0, 0);
+          // NOTE: uncomment the line below, if the final API suggests that
+          //       `publish_time` could be unique
+          // params.publish_time.setHours(0, 0, 0, 0);
           return article.update({
             publish_time: params.publish_time,
             content: params.content
@@ -335,96 +341,4 @@ module.exports = {
 
 };
 
-
-// Test
-let test = false;
-if (test) {
-  module.exports.newArticle({
-      title: 'BREAKING NEWS!!!',
-      publish_time: '1970-01-01',
-      content: 'A big news made by Mr.口-口'
-    })
-    .then((retval) => {
-      if (retval.code === 200) {
-        console.log(`article "${retval.data}" inserted!`);
-      } else {
-        console.log(`In Articles.newArticle[${retval.code}]: ${retval.data}`);
-      }
-    })
-    .catch((err) => {
-      console.log(err.data);
-    });
-
-  module.exports.newArticle({
-      title: 'ANOTHER BREAKING NEWS!!!',
-      publish_time: '1980-01-01',
-      content: 'uvuvwevwev'
-    })
-    .then((retval) => {
-      if (retval.code === 200) {
-        console.log(`article "${retval.data}" inserted!`);
-      } else {
-        console.log(`In Articles.newArticle[${retval.code}]: ${retval.data}`);
-      }
-    })
-    .catch((err) => {
-      console.log(err.data);
-    });
-
-  module.exports.updateArticle({
-      // title: 'BREAKING NEWS!!!',
-      title: 'BEAKING NEWS!!!',     // false title
-      content: `plus one second to ${new Date()} ==> ` +
-          `${new Date(new Date().getTime() + 1)}`
-    })
-    .then((retval) => {
-      if (retval.code === 200) {
-        console.log(`updated article at ${retval.data}`);
-      } else {
-        console.log(`In Articles.updateArticle[${retval.code}]: ` +
-            `${retval.data}`);
-      }
-    })
-    .catch((err) => {
-      console.log(err.data);
-    })
-
-  module.exports.getArticle({publish_time: '1970-01-02'})
-    .then((retval) => {
-      if (retval.code === 200) {
-        console.log(`Found "${retval.data.title}" in records!`);
-      } else {
-        console.log(`No data found!`);
-      }
-    })
-    .catch((err) => {
-      console.log(`Error occured in ` +
-          `\`Articles.getArticle\`: ${err.data}`);
-    });
-
-  module.exports.list({start_time: '1970-01-01'})
-    .then((retval) => {
-      if (retval.code === 200) {
-        console.log(`Found ${retval.data.length} records!`);
-      } else {
-        console.log(`This should not appear: retcode ${retval.code}`);
-      }
-    })
-    .catch((err) => {
-      /* pass */
-    });
-
-  module.exports.deleteAricle({ publish_time: '1980-01-01' })
-    .then((retval) => {
-      if (retval.code === 200) {
-        console.log(`article successfully deleted!`);
-      } else {
-        console.log(`In Articles.deleteAricle[${retval.code}]: ${retval.data}`);
-      }
-    })
-    .catch((err) => {
-      console.log(err);
-    });
-
-}
 
