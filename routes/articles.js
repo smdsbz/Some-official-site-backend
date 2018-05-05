@@ -26,7 +26,7 @@ console.log('No data found!');
 });
 
 //查询某个文章信息
-router.get("/article_list/get_article?publish_time=<publish_time>", (req, res, next) => {
+router.get("/get_article", async (req, res, next) => {
   /*let params = {
     phone: "123456",
     HDAS: "kDLSAKD"
@@ -43,17 +43,22 @@ router.get("/article_list/get_article?publish_time=<publish_time>", (req, res, n
       console.log(`No data found!`);
     }
   });*/
-  articles.getArticle({publish_time:req.body.publish_time})
-  .then((data) => {
-      if (data) {
-        console.log('Found ${data.title} in records!');
-      } else {
-        console.log('No data found!');
-      }
-    })
-  .catch(err => {
-  res.json(err);
-  });
+  // articles.getArticle({publish_time:req.body.publish_time})
+  // .then((data) => {
+  //     if (data) {
+  //       console.log('Found ${data.title} in records!');
+  //     } else {
+  //       console.log('No data found!');
+  //     }
+  //   })
+  // .catch(err => {
+  // res.json(err);
+  let retval = await articles.getArticle(req.query);
+  if (retval.code === 200) {
+    res.send(retval.data.title);
+  } else {
+    res.send(`Error with code ${retval.code}`);
+  }
 });   
   
   
