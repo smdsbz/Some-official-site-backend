@@ -103,7 +103,7 @@ module.exports = {
       // pre-porcess input time vars
       // HACK: 1970-01-01 should be early enough
       params.start_time = params.start_time ?
-          new Date(params.start_time) : new Date('1970-01-01'); 
+          new Date(params.start_time) : new Date('1970-01-01');
       // HACK: manually +1s considering async does not promise you sequential
       params.end_time = params.end_time ?
           new Date(params.end_time) : new Date(new Date().getTime() + 1);
