@@ -59,9 +59,9 @@ router.get("/get_article", async (req, res, next) => {
   } else {
     res.send(`Error with code ${retval.code}`);
   }
-});   
-  
-  
+});
+
+
 
 //新增文章信息
 router.post("/article_list/new_article", (req, res, next) => {
