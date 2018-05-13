@@ -1,5 +1,7 @@
+var fs = require('fs');
 var createError = require('http-errors');
 var hbs = require('hbs');
+var layouts = require('handlebars-layouts');
 var express = require('express');
 var path = require('path');
 var cookieParser = require('cookie-parser');
@@ -12,6 +14,9 @@ var indexRouter = require('./routes/index');
 var usersRouter = require('./routes/users');
 var adminRouter = require('./routes/admin');
 var articlesRouter = require('./routes/articles.js');
+
+hbs.registerHelper(layouts(hbs.handlebars));    // trying to use the power of `extend`
+hbs.registerPartial('admin_base', fs.readFileSync('./views/admin/base.hbs', 'utf8'));
 
 var app = express();
 

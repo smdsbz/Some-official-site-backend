@@ -1,0 +1,67 @@
+{{#extend "admin_base"}}
+
+  {{#content "title"}} - Admin{{/content}}
+
+
+  {{#content "pagebody"}}
+
+  <div class="container">
+    <div class="row">
+      <div class="col-lg-12">
+        <h1 class="page-header">Article List</h1>
+
+        <div class="panel panel-default">
+
+          <div class="panel-heading">
+            Article List
+          </div>
+
+          <div class="panel-body">
+
+            <div class="table-responsive">
+              <table class="table table-hover" id="article-table">
+                <thead>
+                  <th>#</th>
+                  <th>title</th>
+                  <th>publish_time</th>
+                  <th>content</th>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>1</td>
+                    <td>uvuvewvwev</td>
+                    <td>1970-01-01</td>
+                    <td>nyaaaaaaan</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <!-- table-responsive -->
+
+          </div>
+          <!-- panel-body -->
+
+        </div>
+        <!-- panel-default -->
+
+      </div>
+      <!-- col -->
+
+    </div>
+    <!-- row -->
+
+  </div>
+  <!-- container -->
+
+  {{/content}}
+
+
+  {{#content "inlinejs"}}
+  <script type="text/javascript">
+    $(document).ready(function() {
+      let article_table = $("#article-table").DataTable();
+    });
+  </script>
+  {{/content}}
+
+{{/extend}}
