@@ -59,7 +59,31 @@
   {{#content "inlinejs"}}
   <script type="text/javascript">
     $(document).ready(function() {
-      let article_table = $("#article-table").DataTable();
+      let table_data = $.ajax({
+          url: "/article_list/list",
+          method: "GET",
+          success: (data) => {
+            if (data.code === 200) {    // success code
+              // console.log(data.data);
+              // TODO: Convert Array to Object
+              $("#article-table").DataTable({
+                  responsive: true,
+                  data: data.data,
+                  columns: [
+                    { "data": "ID" },
+                    { "data": "title" },
+                    { "data": "publish_time" },
+                    { "data": "content" }
+                  ]
+                });
+            } else {    // request error
+              console.log(`Request Failed with: `, data);
+            }
+          },
+          error: (ret) => {
+            console.log(ret);
+          }
+        });
     });
   </script>
   {{/content}}
