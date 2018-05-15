@@ -18,6 +18,20 @@
 
           <div class="panel-body">
 
+            <div class="row">
+              <label for="number-selector">Number of entries to show</label>
+              <select
+                    class="form-control col-lg-6"
+                    id="number-selector"
+                    style="margin-bottom: 2em;"
+                    onchange="setListLimit(this)">
+                <option value="10">Less</option>
+                <option value="25" selected>Default</option>
+                <option value="50">More</option>
+                <option value="1e+20">All</option>
+              </select>
+            </div>
+
             <table class="table table-hover table-bordered" id="article-table">
               <thead>
                 <th>#</th>
@@ -57,10 +71,30 @@
   {{#content "inlinejs"}}
   <script type="text/javascript">
 
+    //////// Helper Functions ////////
+
+    function reRenderTable(tab, data) {
+      return tab.DataTable()
+      .clear()          // clear all data
+      .rows.add(data)   // re-fill with new data
+      .draw();          // render and return
+    }
+
+
+    function setListLimit(e) {
+      document.gCurrentListLimit = e.value;
+      console.log(`document.gCurrentListLimit ==> ${e.value}`);
+      return e;
+    }
+
+
+    //////// Jobs ////////
+
     $(document).ready(function() {
       // HACK: query start_time, binded to the current page object,
       //       should be early enough
       document.gCurrentStartTime = new Date('1970-01-10');
+      document.gCurrentListLimit = 25;
       // retrieve data from server
       $.ajax({
         url: "/article_list/list",
@@ -70,9 +104,11 @@
         },
         success: (data) => {
           if (data.code === 200) {    // success code
-            // console.log(data.data);
+            // initalize DataTables
+            // NOTE: Init only ONCE!
             let table = $("#article-table").DataTable({
               responsive: true,
+              paging: false,
               lengthMenu: [
                 [10, 25, 50, 1e+20],
                 ["Less", "Medium", "More", "All"]
@@ -85,10 +121,11 @@
                 { "data": "content" }
               ]
             });
-            // bind custom events
-            table.on("length.dt", function(e, settings, length) {
-              console.log(`page length changed to ${length}`);
-            });
+            // bind custom events after creation
+            // NOTE: Use native components and events
+            // table.on("length.dt", function(e, settings, length) {
+            //   console.log(`page length changed to ${length}`);
+            // });
           } else {    // request error
             console.log(`Request Failed with: `, data);
           }
