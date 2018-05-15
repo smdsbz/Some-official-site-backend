@@ -18,19 +18,17 @@
 
           <div class="panel-body">
 
-            <div class="row">
-              <label for="number-selector">Number of entries to show</label>
-              <select
-                    class="form-control col-lg-6"
-                    id="number-selector"
-                    style="margin-bottom: 2em;"
-                    onchange="setListLimit(this)">
-                <option value="10">Less</option>
-                <option value="25" selected>Default</option>
-                <option value="50">More</option>
-                <option value="1e+20">All</option>
-              </select>
-            </div>
+            <!-- <label for="number-selector">Number of entries to show</label> -->
+            <!-- <select -->
+            <!--       class="form-control" -->
+            <!--       id="number-selector" -->
+            <!--       style="margin-bottom: 2em;" -->
+            <!--       onchange="setListLimit(this)"> -->
+            <!--   <option value="10">Less</option> -->
+            <!--   <option value="25" selected>Default</option> -->
+            <!--   <option value="50">More</option> -->
+            <!--   <option value="1e+20">All</option> -->
+            <!-- </select> -->
 
             <table class="table table-hover table-bordered" id="article-table">
               <thead>
@@ -108,18 +106,23 @@
             // NOTE: Init only ONCE!
             let table = $("#article-table").DataTable({
               responsive: true,
-              paging: false,
+              // paging: false,
               lengthMenu: [
                 [10, 25, 50, 1e+20],
                 ["Less", "Medium", "More", "All"]
               ],
+              select: 'single',
+              // dom: "Bfrtip",
+              // buttons: [
+              //   'pdf', 'excel'
+              // ],
               data: data.data,
               columns: [
                 { "data": "ID" },
                 { "data": "title" },
                 { "data": "publish_time" },
                 { "data": "content" }
-              ]
+              ],
             });
             // bind custom events after creation
             // NOTE: Use native components and events
