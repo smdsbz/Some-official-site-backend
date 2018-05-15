@@ -33,22 +33,22 @@ router.get("/get_article", async (req, res, next) => {
 
 //新增文章信息
 router.post("/article_list/new_article", (req, res, next) => {
-let params = {
-  ID:req.body.ID,
-  title:req.body.title,
-  publish_time:req.body.publish_time,
-  content: req.body.content,
-};
-articles.create(params)
-.then(result => {
-  console.log(
-    `[entryForm] userlist params => ${JSON.stringify(params, null, 4)}`
-  );
-  res.json(result);
-})
-.catch(err => {
-  res.json(err);
-})
+  let params = {
+    ID: req.body.ID,
+    title: req.body.title,
+    publish_time: req.body.publish_time,
+    content: req.body.content
+  };
+  articles.create(params)
+  .then(result => {
+    console.log(
+      `[entryForm] userlist params => ${JSON.stringify(params, null, 4)}`
+    );
+    res.json(result);
+  })
+  .catch(err => {
+    res.json(err);
+  })
 });
 
 //修改文章信息信息

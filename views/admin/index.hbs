@@ -18,25 +18,23 @@
 
           <div class="panel-body">
 
-            <div class="table-responsive">
-              <table class="table table-hover" id="article-table">
-                <thead>
-                  <th>#</th>
-                  <th>title</th>
-                  <th>publish_time</th>
-                  <th>content</th>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td>1</td>
-                    <td>uvuvewvwev</td>
-                    <td>1970-01-01</td>
-                    <td>nyaaaaaaan</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-            <!-- table-responsive -->
+            <table class="table table-hover table-bordered" id="article-table">
+              <thead>
+                <th>#</th>
+                <th>title</th>
+                <th>publish_time</th>
+                <th>content</th>
+              </thead>
+              <tbody>
+                <!-- default data -->
+                <!-- <tr> -->
+                <!--   <td>1</td> -->
+                <!--   <td>uvuvewvwev</td> -->
+                <!--   <td>1970-01-01</td> -->
+                <!--   <td>nyaaaaaaan</td> -->
+                <!-- </tr> -->
+              </tbody>
+            </table>
 
           </div>
           <!-- panel-body -->
@@ -58,33 +56,49 @@
 
   {{#content "inlinejs"}}
   <script type="text/javascript">
+
     $(document).ready(function() {
-      let table_data = $.ajax({
-          url: "/article_list/list",
-          method: "GET",
-          success: (data) => {
-            if (data.code === 200) {    // success code
-              // console.log(data.data);
-              // TODO: Convert Array to Object
-              $("#article-table").DataTable({
-                  responsive: true,
-                  data: data.data,
-                  columns: [
-                    { "data": "ID" },
-                    { "data": "title" },
-                    { "data": "publish_time" },
-                    { "data": "content" }
-                  ]
-                });
-            } else {    // request error
-              console.log(`Request Failed with: `, data);
-            }
-          },
-          error: (ret) => {
-            console.log(ret);
+      // HACK: query start_time, binded to the current page object,
+      //       should be early enough
+      document.gCurrentStartTime = new Date('1970-01-10');
+      // retrieve data from server
+      $.ajax({
+        url: "/article_list/list",
+        method: "GET",
+        data: {
+          "start_time": document.gCurrentStartTime
+        },
+        success: (data) => {
+          if (data.code === 200) {    // success code
+            // console.log(data.data);
+            let table = $("#article-table").DataTable({
+              responsive: true,
+              lengthMenu: [
+                [10, 25, 50, 1e+20],
+                ["Less", "Medium", "More", "All"]
+              ],
+              data: data.data,
+              columns: [
+                { "data": "ID" },
+                { "data": "title" },
+                { "data": "publish_time" },
+                { "data": "content" }
+              ]
+            });
+            // bind custom events
+            table.on("length.dt", function(e, settings, length) {
+              console.log(`page length changed to ${length}`);
+            });
+          } else {    // request error
+            console.log(`Request Failed with: `, data);
           }
-        });
+        },
+        error: (ret) => {
+          console.log(ret);
+        }
+      });
     });
+
   </script>
   {{/content}}
 
