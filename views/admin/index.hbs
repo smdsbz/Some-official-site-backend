@@ -60,6 +60,26 @@
     </div>
     <!-- row -->
 
+    <div class="modal fade" id="delete-confim-modal" tabindex="-1" role="dialog">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Confirm Your Action</h5>
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
+          <div class="modal-body">
+            <p>Are you sure you'd want to delete this article? There is no going back!</p>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+            <button type="button" class="btn btn-warning">Save changes</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
   </div>
   <!-- container -->
 
@@ -111,11 +131,26 @@
                 [10, 25, 50, 1e+20],
                 ["Less", "Medium", "More", "All"]
               ],
-              select: 'single',
-              // dom: "Bfrtip",
-              // buttons: [
-              //   'pdf', 'excel'
-              // ],
+              select: "single",
+              dom: "B<fl<t>ip>",
+              buttons: [
+                "colvis",
+                {
+                  extend: "selected",
+                  text: "Edit",
+                  action: function(e, dt, but, conf) {
+                    console.log(`Edit button pressed!`)
+                  }
+                },
+                {
+                  extend: "selected",
+                  text: "Delete",
+                  action: function(e, dt, but, conf) {
+                    console.log(e);
+                    console.log(`Delete button pressed!`);
+                  }
+                }
+              ],
               data: data.data,
               columns: [
                 { "data": "ID" },
