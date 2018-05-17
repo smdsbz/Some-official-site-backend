@@ -60,3 +60,5 @@ typings/
 # Vim Session
 Session.vim
 
+# VSCode
+.vscode

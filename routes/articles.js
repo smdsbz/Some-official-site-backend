@@ -10,13 +10,13 @@ router.get("/", function(req, res, next) {
 
 //查询已有文章信息列表
 router.get("/list", async (req, res, next) => {
-  let retval = await articles.list(req.query);
-  if (retval.code === 200) {
-    // console.log(retval.data);
-    res.send( retval );
-  } else {
-    res.send({ code: retval.code });    // suppress error object
-  }
+  articles.list(req.query)
+    .then((retval) => {
+      res.json(retval);
+    })
+    .catch((err) => {
+      res.json(err);
+    });
 });
 
 
@@ -74,49 +74,23 @@ router.post("/article_list/update_article", (req, res, next) => {
 });
 
 //删除文章信息
-router.delete("/article_list/delete_article?publish_time=<publish_time>", (req, res, next) => {
-  /*let params = {
-  phone: "123456"
-  };
-  enrty_logic.createUser(params)
-  .then(result => {
-  console.log(
-      `[entryForm] userlist params => ${JSON.stringify(params, null, 4)}`
-  );
-  res.json(result);
-  })
-  .catch(err => {
-  res.json(err);
-
-  .then((data) => {
-      if (data) {
-        console.log(`Found ${data.title} in records!`);
+router.post("/delete_article", async (req, res, next) => {
+  if (!req.signedCookies.user) {    // not logged admin user
+    res.json({ code: 998, data: 'user not logged-in' });
+  } else {
+    articles.deleteAricle({ publish_time: req.body.publish_time })
+    .then((retval) => {                         //?????????????????????
+      if (retval.code === 200) {
+        res.json(retval);
       } else {
-        console.log(`No data found!`);
+        console.log(`In Articles.deleteAricle[${retval.code}]: ${retval.data}`);
+        res.json(retval);
       }
     })
-  .catch(err => {
-  res.json(err);
-  });
-
-  })*/
-
-  /*let ret = await Articles.deleteAricle({ publish_time: new Date() });
-      ret.should.have.property('code').which.is.equal(200);
-      ret.data.getTime().should.be.equal(new Date().setHours(0, 0, 0, 0)); */
-
-  articles.deleteAricle({ publish_time: res.body.publish_time })
-  .then((retval) => {                         //?????????????????????
-    if (retval.code === 200) {
-      console.log(`article successfully deleted!`);
-    } else {
-      console.log(`In Articles.deleteAricle[${retval.code}]: ${retval.data}`);
-    }
-  })
-  .catch((err) => {
-    console.log(err);
-  });
-
+    .catch((err) => {
+      res.json(err);
+    });
+  }
 });
 
 

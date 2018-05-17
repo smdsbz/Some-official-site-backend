@@ -5,6 +5,29 @@
 
   {{#content "pagebody"}}
 
+  <!-- Modal Dialogues -->
+  <div class="modal fade" id="delete-confirm-modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+          {{! <h4> must be under <button>, otherwise they will be on separate lines }}
+          <h4 class="modal-title">Confirm Your Action</h4>
+        </div>
+        <div class="modal-body">
+          <p>Are you sure you'd want to delete this article? There is no going back!</p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-danger" id="delete-selected-button">Delete</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- Main Content Block -->
+
   <div class="container">
     <div class="row">
       <div class="col-lg-12">
@@ -60,25 +83,6 @@
     </div>
     <!-- row -->
 
-    <div class="modal fade" id="delete-confim-modal" tabindex="-1" role="dialog">
-      <div class="modal-dialog" role="document">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title">Confirm Your Action</h5>
-            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-              <span aria-hidden="true">&times;</span>
-            </button>
-          </div>
-          <div class="modal-body">
-            <p>Are you sure you'd want to delete this article? There is no going back!</p>
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-            <button type="button" class="btn btn-warning">Save changes</button>
-          </div>
-        </div>
-      </div>
-    </div>
 
   </div>
   <!-- container -->
@@ -109,16 +113,20 @@
     //////// Jobs ////////
 
     $(document).ready(function() {
+
+      //// Init DataTables ////
+
       // HACK: query start_time, binded to the current page object,
       //       should be early enough
       document.gCurrentStartTime = new Date('1970-01-10');
-      document.gCurrentListLimit = 25;
+      document.gCurrentListLimit = 1e+10;   // HACK: Fake unlimited
       // retrieve data from server
       $.ajax({
         url: "/article_list/list",
         method: "GET",
         data: {
-          "start_time": document.gCurrentStartTime
+          "start_time": document.gCurrentStartTime,
+          "limit": document.gCurrentListLimit
         },
         success: (data) => {
           if (data.code === 200) {    // success code
@@ -135,19 +143,19 @@
               dom: "B<fl<t>ip>",
               buttons: [
                 "colvis",
-                {
+                {   // button jumping to editing page
                   extend: "selected",
                   text: "Edit",
                   action: function(e, dt, but, conf) {
                     console.log(`Edit button pressed!`)
                   }
                 },
-                {
+                {   // button to delete selected article
                   extend: "selected",
                   text: "Delete",
                   action: function(e, dt, but, conf) {
-                    console.log(e);
                     console.log(`Delete button pressed!`);
+                    $("#delete-confirm-modal").modal("show");
                   }
                 }
               ],
@@ -172,7 +180,47 @@
           console.log(ret);
         }
       });
-    });
+
+
+      //// Register Events Handlers ////
+
+      $("#delete-selected-button").on("click", function() {
+        let tab = $("#article-table").DataTable();    // get API
+        let sel = tab.rows({ selected: true }).data();
+        $.ajax({
+          url: "/article_list/delete_article",
+          type: "POST",
+          data: { publish_time: sel[0]["publish_time"] },
+          success: function(data) {
+            console.log(data);
+            if (data.code === 200) {
+              // refresh DataTable with new data
+              $.ajax({
+                url: "/article_list/list",
+                method: "GET",
+                data: {
+                  "start_time": document.gCurrentStartTime,
+                  "limit": document.gCurrentListLimit
+                },
+                success: (data) => {
+                  if (data.code === 200) {
+                    // refresh table
+                    reRenderTable($("#article-table"), data.data);
+                    // back to main view
+                    $("#delete-confirm-modal").modal("hide");
+                  } else {
+                    console.log(`Failed to retrieve data from server`);
+                  }
+                }
+              });   // ajax get list
+            } else {
+              console.log(`Deletion failed with ${data}`);
+            }
+          }
+        }); // ajax post delete
+      });
+
+    }); // $(document).ready()
 
   </script>
   {{/content}}

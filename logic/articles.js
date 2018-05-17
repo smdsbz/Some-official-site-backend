@@ -116,7 +116,7 @@ module.exports = {
               [Op.lte]: params.end_time
             }
           },
-          limit: params.limit || 25
+          limit: Number(params.limit) || 25
         })
         .then((record) => {
           resolve({
